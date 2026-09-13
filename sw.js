@@ -1,7 +1,11 @@
 // Minimal service worker — its only job is to make this site installable
-// as a desktop/home-screen app. It caches the app shell so it also opens
-// instantly and works offline, since all data is stored locally anyway.
-const CACHE_NAME = 'work-rota-v1';
+// as a desktop/home-screen app, with basic offline resilience.
+//
+// The page itself (index.html) is fetched network-first, so you always get
+// the latest version when you have a connection — it only falls back to the
+// cached copy if you're offline. Static assets (icons, manifest) are
+// cached-first since they rarely change.
+const CACHE_NAME = 'work-rota-v2';
 const APP_SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -21,13 +25,26 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // Page navigations: always try the network first so updates show up
+  // immediately; fall back to the cached shell only if offline.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Everything else (icons, manifest, Firebase SDK, etc.): cache-first,
+  // then go to the network and store a copy for next time.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    caches.match(req).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request).then((res) => {
-        if (res.ok && event.request.url.startsWith(self.location.origin)) {
+      return fetch(req).then((res) => {
+        if (res.ok && req.url.startsWith(self.location.origin)) {
           const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
         }
         return res;
       }).catch(() => cached);

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Work Rota">
+<meta name="theme-color" content="#E9E6DC">
+<title>Work Rota</title>
+<style>
+  :root{
+    --paper:#E9E6DC;
+    --paper-raised:#F7F5EE;
+    --card:#FBFAF5;
+    --ink:#26241F;
+    --ink-soft:#7A7568;
+    --ink-faint:#A8A296;
+    --line:#D2CDBE;
+    --line-soft:#E3DFD2;
+    --amber:#C97A25;
+    --rust:#A64B33;
+    --teal:#2E6E62;
+    --plum:#6C4C7A;
+    --slate:#3E5C73;
+    --olive:#6B7A31;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Roboto Mono", "Liberation Mono", monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image: linear-gradient(var(--line-soft) 1px, transparent 1px);
+    background-size: 100% 34px;
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:0 0 60px;
+  }
+  .wrap{max-width:540px;margin:0 auto;padding:0 16px;}
+
+  header{
+    padding:26px 0 18px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    margin-bottom:20px;
+  }
+  .brand h1{
+    font-size:23px;
+    font-weight:800;
+    letter-spacing:-0.02em;
+    margin:0 0 3px;
+    color:var(--ink);
+  }
+  .brand .sub{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.02em;
+  }
+  .today-badge{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    line-height:1.5;
+    padding-top:3px;
+  }
+  .today-badge b{
+    display:block;
+    font-size:13px;
+    color:var(--ink);
+    font-weight:700;
+  }
+
+  .week-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .week-toolbar .range{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .week-nav{display:flex;gap:6px;}
+  .week-nav-btn{
+    width:30px;height:30px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:7px;
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:14px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .week-nav-btn:disabled{opacity:0.3;cursor:default;}
+  .week-nav-btn:active:not(:disabled){background:var(--line-soft);}
+
+  .stamp-row{
+    display:flex;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .stamp{
+    flex:0 0 auto;
+    width:88px;height:88px;
+    border:2px solid var(--ink);
+    border-radius:50%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    transform:rotate(-4deg);
+    background:var(--card);
+  }
+  .stamp .n{
+    font-family:var(--mono);
+    font-size:24px;
+    font-weight:700;
+    line-height:1;
+    color:var(--ink);
+    font-variant-numeric:tabular-nums;
+  }
+  .stamp .l{
+    font-family:var(--mono);
+    font-size:9px;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    margin-top:3px;
+  }
+  .split-col{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:8px;
+    min-width:0;
+  }
+  .split-bar{
+    height:10px;
+    border-radius:5px;
+    overflow:hidden;
+    display:flex;
+    background:var(--line-soft);
+    border:1px solid var(--line);
+  }
+  .split-bar span{height:100%;}
+  .split-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px 12px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .split-legend .chip{display:inline-flex;align-items:center;gap:5px;}
+  .split-legend .dot{width:7px;height:7px;border-radius:50%;flex:none;}
+  .split-legend b{color:var(--ink);font-weight:700;}
+  .no-hours-note{font-family:var(--mono);font-size:12px;color:var(--ink-faint);}
+
+  .days{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
+  .day-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    padding:10px 12px 10px 0;
+    position:relative;
+    overflow:hidden;
+  }
+  .day-card .colorbar{
+    width:5px;
+    align-self:stretch;
+    margin-right:11px;
+    background:var(--line-soft);
+    flex:none;
+  }
+  .day-card.today{border-color:var(--ink);}
+  .daycell{
+    width:52px;
+    flex:none;
+    font-family:var(--mono);
+    line-height:1.25;
+  }
+  .daycell .dname{
+    font-weight:700;font-size:13px;color:var(--ink);
+    display:flex;align-items:center;gap:4px;
+  }
+  .daycell .dname .dot{
+    width:5px;height:5px;border-radius:50%;background:var(--amber);
+    display:inline-block;
+  }
+  .daycell .ddate{color:var(--ink-faint);font-size:11px;display:block;}
+
+  .day-fields{flex:1;display:flex;gap:8px;align-items:center;min-width:0;}
+  select.loc{
+    flex:1;
+    font-family:var(--sans);
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink);
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 8px;
+    min-width:0;
+  }
+  select.loc.empty{color:var(--ink-faint);font-weight:400;}
+
+  .hourscell{width:64px;flex:none;}
+  input.hours{
+    width:100%;
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:700;
+    text-align:right;
+    color:var(--ink);
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 9px;
+    font-variant-numeric:tabular-nums;
+  }
+  input.hours:focus, select.loc:focus{outline:none;border-color:var(--ink);}
+
+  .manage-link{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-soft);
+    background:none;border:none;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+    padding:0;
+    margin-bottom:6px;
+  }
+
+  .empty-state{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--ink-faint);
+    padding:36px 18px;
+    text-align:center;
+    line-height:1.6;
+    border:1px dashed var(--line);
+    border-radius:9px;
+  }
+
+  .overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(38,36,31,0.42);
+    align-items:flex-end;
+    justify-content:center;
+    z-index:10;
+  }
+  .overlay.active{display:flex;}
+  .sheet{
+    background:var(--paper);
+    width:100%;
+    max-width:540px;
+    border-radius:14px 14px 0 0;
+    padding:20px 18px 24px;
+    max-height:80vh;
+    overflow-y:auto;
+    border-top:3px solid var(--amber);
+  }
+  .sheet h2{font-size:17px;margin:0 0 4px;font-weight:800;letter-spacing:-0.01em;}
+  .sheet .hint{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);margin-bottom:14px;}
+  .loc-row{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--line-soft);
+  }
+  .loc-row .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .loc-row span{flex:1;font-size:14px;font-weight:600;}
+  .loc-row button{
+    background:none;border:none;color:var(--rust);
+    font-family:var(--mono);font-size:11.5px;cursor:pointer;
+    padding:4px 6px;text-decoration:underline;text-underline-offset:2px;
+  }
+  .add-loc{display:flex;gap:8px;margin-top:16px;}
+  .add-loc input{
+    flex:1;font-family:var(--sans);font-size:14px;
+    border:1px solid var(--line);border-radius:7px;padding:9px 10px;
+    background:var(--card);color:var(--ink);
+  }
+  .add-loc input:focus{outline:none;border-color:var(--ink);}
+  .add-loc button{
+    background:var(--ink);border:none;color:var(--paper-raised);
+    font-weight:700;font-size:13px;border-radius:7px;padding:0 16px;cursor:pointer;
+  }
+  .close-sheet{
+    display:block;width:100%;margin-top:18px;
+    background:none;border:1px solid var(--line);border-radius:7px;
+    padding:10px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;
+  }
+  .status{
+    font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+    text-align:center;margin-top:8px;min-height:14px;
+    opacity:0;transition:opacity 0.2s ease;
+  }
+  .status.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Work Rota</h1>
+    </div>
+    <div class="today-badge" id="today-badge"></div>
+  </header>
+
+  <section id="panel-current">
+    <div class="week-toolbar">
+      <span class="range" id="week-range-label">—</span>
+      <div class="week-nav">
+        <button class="week-nav-btn" id="btn-prev-week" aria-label="Previous week">‹</button>
+        <button class="week-nav-btn" id="btn-next-week" aria-label="Next week">›</button>
+      </div>
+    </div>
+
+    <div class="stamp-row">
+      <div class="stamp">
+        <div class="n" id="week-total">0</div>
+        <div class="l">HOURS</div>
+      </div>
+      <div class="split-col" id="split-col">
+        <div class="no-hours-note">Nothing logged yet this week.</div>
+      </div>
+    </div>
+
+    <div class="days" id="days-body"></div>
+
+    <button class="manage-link" id="btn-manage">manage locations</button>
+    <div class="status" id="status-current"></div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2>Locations</h2>
+    <div class="hint">Each site keeps its own color across the log.</div>
+    <div id="loc-list"></div>
+    <div class="add-loc">
+      <input type="text" id="new-loc-input" placeholder="Add a site name">
+      <button id="add-loc-btn">Add</button>
+    </div>
+    <button class="close-sheet" id="close-sheet">Done</button>
+  </div>
+</div>
+
+<script>
+const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const PALETTE = ['#C97A25','#2E6E62','#6C4C7A','#3E5C73','#A64B33','#6B7A31'];
+const STORAGE_PREFIX = 'work-rota:';
+
+// Simple localStorage-backed store, standing in for Claude's window.storage API
+// so this file works as a standalone, self-hosted page.
+const storage = {
+  async get(key){
+    const raw = localStorage.getItem(STORAGE_PREFIX + key);
+    if(raw === null) throw new Error('not found');
+    return { key, value: raw };
+  },
+  async set(key, value){
+    localStorage.setItem(STORAGE_PREFIX + key, value);
+    return { key, value };
+  }
+};
+
+let locations = [];
+let currentMonday = getMondayOf(new Date());
+let viewingMonday = new Date(currentMonday);
+
+function pad(n){ return n.toString().padStart(2,'0'); }
+function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function getMondayOf(date){
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function addDays(date, n){
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+function formatRange(monday){
+  const sunday = addDays(monday, 6);
+  const opts = { month: 'short', day: 'numeric' };
+  const sameMonth = monday.getMonth() === sunday.getMonth();
+  const startStr = monday.toLocaleDateString('en-US', sameMonth ? {day:'numeric'} : opts);
+  const endStr = sunday.toLocaleDateString('en-US', opts);
+  const year = sunday.getFullYear();
+  return `${sameMonth ? monday.toLocaleDateString('en-US',{month:'short'})+' ' : ''}${startStr}\u2013${endStr}, ${year}`;
+}
+function weekKey(monday){ return `week:${toISODate(monday)}`; }
+function isSameWeek(a,b){ return toISODate(a) === toISODate(b); }
+function isFutureWeek(monday){ return monday.getTime() > currentMonday.getTime(); }
+function colorFor(loc){
+  if(!loc) return null;
+  const idx = locations.indexOf(loc);
+  if(idx === -1) return '#A8A296';
+  return PALETTE[idx % PALETTE.length];
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatHours(n){
+  return (Math.round(n*100)/100).toString();
+}
+
+async function loadLocations(){
+  try{
+    const res = await storage.get('locations');
+    locations = res ? JSON.parse(res.value) : [];
+  }catch(e){
+    locations = [];
+  }
+}
+async function saveLocations(){
+  try{
+    await storage.set('locations', JSON.stringify(locations));
+  }catch(e){
+    setStatus('current', 'Could not save locations.');
+  }
+}
+async function loadWeek(monday){
+  try{
+    const res = await storage.get(weekKey(monday));
+    return res ? JSON.parse(res.value) : {};
+  }catch(e){
+    return {};
+  }
+}
+async function saveWeek(monday, data){
+  try{
+    await storage.set(weekKey(monday), JSON.stringify(data));
+  }catch(e){
+    setStatus('current', 'Could not save — try again.');
+  }
+}
+function setStatus(which, msg){
+  const el = document.getElementById(`status-${which}`);
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('show', !!msg);
+  if(msg){ setTimeout(()=>{ if(el.textContent===msg){ el.classList.remove('show'); } }, 1800); }
+}
+function locOptionsHTML(selected){
+  let html = `<option value="" ${!selected?'selected':''}>— pick a site</option>`;
+  for(const loc of locations){
+    html += `<option value="${escapeHtml(loc)}" ${loc===selected?'selected':''}>${escapeHtml(loc)}</option>`;
+  }
+  return html;
+}
+
+function renderTodayBadge(){
+  const today = new Date();
+  document.getElementById('today-badge').innerHTML = `
+    <b>${today.toLocaleDateString('en-US',{weekday:'short'})}</b>
+    ${today.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+  `;
+}
+
+async function renderCurrentWeek(){
+  document.getElementById('week-range-label').textContent = formatRange(viewingMonday);
+
+  const weekData = await loadWeek(viewingMonday);
+  const daysEl = document.getElementById('days-body');
+  daysEl.innerHTML = '';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  for(let i=0;i<7;i++){
+    const date = addDays(viewingMonday, i);
+    const dISO = toISODate(date);
+    const dayData = weekData[dISO] || {location:'', hours:''};
+    const isToday = toISODate(date) === toISODate(today);
+    const barColor = colorFor(dayData.location) || 'transparent';
+
+    const card = document.createElement('div');
+    card.className = `day-card ${isToday?'today':''}`;
+    card.innerHTML = `
+      <div class="colorbar" style="background:${barColor}"></div>
+      <div class="daycell">
+        <span class="dname">${isToday?'<span class="dot"></span>':''}${DAY_NAMES[i]}</span>
+        <span class="ddate">${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+      </div>
+      <div class="day-fields">
+        <select class="loc ${!dayData.location?'empty':''}" data-date="${dISO}">
+          ${locOptionsHTML(dayData.location)}
+        </select>
+        <div class="hourscell">
+          <input type="number" class="hours" data-date="${dISO}" min="0" step="0.25" placeholder="0" value="${dayData.hours || ''}">
+        </div>
+      </div>
+    `;
+    daysEl.appendChild(card);
+  }
+
+  daysEl.querySelectorAll('select.loc').forEach(sel => sel.addEventListener('change', onDayFieldChange));
+  daysEl.querySelectorAll('input.hours').forEach(inp => inp.addEventListener('change', onDayFieldChange));
+
+  renderTotals(weekData);
+}
+
+async function onDayFieldChange(e){
+  const date = e.target.getAttribute('data-date');
+  const weekData = await loadWeek(viewingMonday);
+  if(!weekData[date]) weekData[date] = {location:'', hours:''};
+
+  if(e.target.classList.contains('loc')){
+    weekData[date].location = e.target.value;
+    e.target.classList.toggle('empty', !e.target.value);
+    const card = e.target.closest('.day-card');
+    card.querySelector('.colorbar').style.background = colorFor(e.target.value) || 'transparent';
+  } else {
+    let v = parseFloat(e.target.value);
+    weekData[date].hours = isNaN(v) ? '' : v;
+  }
+
+  if(!weekData[date].location && !weekData[date].hours){
+    delete weekData[date];
+  }
+
+  await saveWeek(viewingMonday, weekData);
+  setStatus('current', 'Saved');
+  renderTotals(weekData);
+}
+
+function renderTotals(weekData){
+  let total = 0;
+  const bySite = {};
+  for(const date in weekData){
+    const {location, hours} = weekData[date];
+    const h = parseFloat(hours) || 0;
+    total += h;
+    if(location) bySite[location] = (bySite[location]||0) + h;
+  }
+  document.getElementById('week-total').textContent = formatHours(total);
+
+  const splitCol = document.getElementById('split-col');
+  const entries = Object.entries(bySite).filter(([,h]) => h > 0);
+
+  if(entries.length === 0){
+    splitCol.innerHTML = '<div class="no-hours-note">Nothing logged yet this week.</div>';
+    return;
+  }
+
+  const barHTML = entries.map(([loc,h]) => {
+    const pct = total > 0 ? (h/total*100) : 0;
+    return `<span style="width:${pct}%;background:${colorFor(loc)}"></span>`;
+  }).join('');
+
+  const legendHTML = entries.map(([loc,h]) => `
+    <span class="chip"><span class="dot" style="background:${colorFor(loc)}"></span>${escapeHtml(loc)} <b>${formatHours(h)}</b></span>
+  `).join('');
+
+  splitCol.innerHTML = `
+    <div class="split-bar">${barHTML}</div>
+    <div class="split-legend">${legendHTML}</div>
+  `;
+}
+
+function renderLocList(){
+  const el = document.getElementById('loc-list');
+  if(locations.length === 0){
+    el.innerHTML = '<div class="empty-state" style="padding:18px 0;border:none;">No locations yet — add one below.</div>';
+    return;
+  }
+  el.innerHTML = locations.map((loc,i) => `
+    <div class="loc-row">
+      <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
+      <span>${escapeHtml(loc)}</span>
+      <button data-idx="${i}" class="remove-loc">remove</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.remove-loc').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.getAttribute('data-idx'));
+      locations.splice(idx,1);
+      await saveLocations();
+      renderLocList();
+      renderCurrentWeek();
+    });
+  });
+}
+
+document.getElementById('btn-prev-week').addEventListener('click', () => {
+  viewingMonday = addDays(viewingMonday, -7);
+  renderCurrentWeek();
+});
+document.getElementById('btn-next-week').addEventListener('click', () => {
+  viewingMonday = addDays(viewingMonday, 7);
+  renderCurrentWeek();
+});
+
+document.getElementById('btn-manage').addEventListener('click', () => {
+  renderLocList();
+  document.getElementById('overlay').classList.add('active');
+});
+document.getElementById('close-sheet').addEventListener('click', () => {
+  document.getElementById('overlay').classList.remove('active');
+});
+document.getElementById('overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'overlay') document.getElementById('overlay').classList.remove('active');
+});
+document.getElementById('add-loc-btn').addEventListener('click', addLocation);
+document.getElementById('new-loc-input').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') addLocation();
+});
+async function addLocation(){
+  const input = document.getElementById('new-loc-input');
+  const val = input.value.trim();
+  if(!val) return;
+  if(locations.includes(val)){ input.value=''; return; }
+  locations.push(val);
+  input.value = '';
+  await saveLocations();
+  renderLocList();
+  renderCurrentWeek();
+}
+
+(async function init(){
+  renderTodayBadge();
+  await loadLocations();
+  await renderCurrentWeek();
+})();
+
+// Register the service worker (enables "Install app" in Chrome/Edge and
+// "Add to Home Screen" on mobile).
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(e){ console.warn('SW registration failed', e); });
+  });
+}
+</script>
+</body>
+</html>
